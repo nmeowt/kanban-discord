@@ -160,11 +160,12 @@ npm run start:dev
 - Open [Discord Developer Portal](https://discord.com/developers/applications)
 - Create or select your application
 - Copy:
-  - `Application ID`
-  - `Public Key`
+- `Application ID`
+- `Public Key`
 - Go to `Bot`
 - Create the bot if needed
 - Copy or reset the bot token
+- Add a bot avatar in the `Bot` tab if you want branded installation and member list presence
 
 ### 2. Invite the bot
 
@@ -174,12 +175,16 @@ Use this format:
 https://discord.com/oauth2/authorize?client_id=YOUR_APP_ID&scope=bot%20applications.commands
 ```
 
+For broad rollout, enable `SERVER MEMBERS INTENT` only if you add features that require it. The current bot only needs slash commands in servers.
+
 ### 3. Get the server ID
 
 - Enable Discord Developer Mode
 - Right-click the server
 - Copy the server ID
-- Put it in `DISCORD_GUILD_ID`
+- Put it in `DISCORD_GUILD_ID` for fast test-server command registration
+
+If you want the bot to be installable across multiple servers, leave `DISCORD_GUILD_ID` empty. The bot will register global slash commands instead. Discord can take up to about an hour to propagate global commands.
 
 ## Recommended first-time setup flow
 

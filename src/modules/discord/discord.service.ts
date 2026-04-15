@@ -54,7 +54,7 @@ export class DiscordService implements OnModuleInit {
     const clientId = process.env.DISCORD_CLIENT_ID;
     const guildId = process.env.DISCORD_GUILD_ID;
 
-    if (!token || !clientId || !guildId) {
+    if (!token || !clientId) {
       this.logger.warn('Discord credentials missing. Bot bootstrap skipped.');
       return;
     }
@@ -92,7 +92,7 @@ export class DiscordService implements OnModuleInit {
     await this.client.login(token);
   }
 
-  private async registerCommands(token: string, clientId: string, guildId: string) {
+  private async registerCommands(token: string, clientId: string, guildId?: string) {
     const stateChoices = [
       { name: 'Backlog', value: 'backlog' },
       { name: 'Todo', value: 'todo' },
@@ -304,9 +304,18 @@ export class DiscordService implements OnModuleInit {
     ];
 
     const rest = new REST({ version: '10' }).setToken(token);
-    await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+    if (guildId) {
+      await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+        body: commands,
+      });
+      this.logger.log(`Registered guild slash commands for guild ${guildId}`);
+      return;
+    }
+
+    await rest.put(Routes.applicationCommands(clientId), {
       body: commands,
     });
+    this.logger.log('Registered global slash commands');
   }
 
   private async handleChatInput(interaction: ChatInputCommandInteraction) {

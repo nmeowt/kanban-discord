@@ -13,7 +13,7 @@
 - `REDIS_URL`
 - `DISCORD_BOT_TOKEN`
 - `DISCORD_CLIENT_ID`
-- `DISCORD_GUILD_ID`
+- `DISCORD_GUILD_ID` for test-server scoped commands only
 
 ## Startup
 
@@ -25,6 +25,8 @@
 
 ## Operational notes
 
+- Leave `DISCORD_GUILD_ID` unset in production to register global commands for all servers that install the bot
+- Global slash command updates are slower to propagate than guild-scoped commands
 - Use one database schema per environment
 - Keep Redis durable enough for queued reminders
 - Rotate Discord bot token through secret storage
