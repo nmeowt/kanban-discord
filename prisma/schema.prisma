@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TaskType {
+  TASK
+  BUG
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TaskStatusCategory {
+  BACKLOG
+  ACTIVE
+  REVIEW
+  DONE
+}
+
+enum ApprovalDecisionStatus {
+  APPROVED
+  REJECTED
+}
+
+enum ReminderType {
+  DUE_SOON
+  OVERDUE
+}
+
+enum AppRole {
+  ADMIN
+  LEAD
+  DEVELOPER
+  TESTER
+  APPROVER
+}
+
+model GuildConfig {
+  id                    String            @id @default(cuid())
+  discordGuildId        String            @unique
+  name                  String
+  defaultBoardId        String?
+  notificationChannelId String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  boards                Board[]
+  tasks                 Task[]
+  roleMappings          RoleMapping[]
+  workflowStates        WorkflowState[]
+  workflowTransitions   WorkflowTransition[]
+  notificationRules     NotificationRule[]
+}
+
+model Board {
+  id            String   @id @default(cuid())
+  guildConfigId String
+  name          String
+  key           String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  guildConfig   GuildConfig @relation(fields: [guildConfigId], references: [id], onDelete: Cascade)
+  tasks         Task[]
+
+  @@unique([guildConfigId, key])
+}
+
+model RoleMapping {
+  id            String   @id @default(cuid())
+  guildConfigId String
+  discordRoleId String
+  appRole       AppRole
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  guildConfig   GuildConfig @relation(fields: [guildConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([guildConfigId, discordRoleId, appRole])
+}
+
+model WorkflowState {
+  id                 String   @id @default(cuid())
+  guildConfigId      String
+  key                String
+  displayName        String
+  category           TaskStatusCategory
+  orderIndex         Int
+  allowReopen        Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  guildConfig        GuildConfig @relation(fields: [guildConfigId], references: [id], onDelete: Cascade)
+  outgoingTransitions WorkflowTransition[] @relation("FromState")
+  incomingTransitions WorkflowTransition[] @relation("ToState")
+  tasks              Task[]
+
+  @@unique([guildConfigId, key])
+}
+
+model WorkflowTransition {
+  id                String   @id @default(cuid())
+  guildConfigId     String
+  fromStateId       String
+  toStateId         String
+  allowedRolesJson  Json
+  requiresReason    Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  guildConfig       GuildConfig @relation(fields: [guildConfigId], references: [id], onDelete: Cascade)
+  fromState         WorkflowState @relation("FromState", fields: [fromStateId], references: [id], onDelete: Cascade)
+  toState           WorkflowState @relation("ToState", fields: [toStateId], references: [id], onDelete: Cascade)
+
+  @@unique([guildConfigId, fromStateId, toStateId])
+}
+
+model Task {
+  id                 String   @id @default(cuid())
+  guildConfigId      String
+  boardId            String
+  externalKey        String
+  title              String
+  description        String
+  type               TaskType
+  priority           TaskPriority
+  workflowStateId    String
+  createdByDiscordId String
+  assigneeDiscordId  String?
+  dueDate            DateTime?
+  completedAt        DateTime?
+  lastReminderAt     DateTime?
+  lastReminderType   ReminderType?
+  archivedAt         DateTime?
+  labelsJson         Json?
+  metadataJson       Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  guildConfig        GuildConfig @relation(fields: [guildConfigId], references: [id], onDelete: Cascade)
+  board              Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  workflowState      WorkflowState @relation(fields: [workflowStateId], references: [id], onDelete: Restrict)
+  comments           TaskComment[]
+  assignments        TaskAssignment[]
+  transitions        TaskTransition[]
+  approvals          ApprovalDecision[]
+
+  @@unique([guildConfigId, externalKey])
+  @@index([guildConfigId, workflowStateId])
+}
+
+model TaskComment {
+  id              String   @id @default(cuid())
+  taskId          String
+  authorDiscordId String
+  body            String
+  createdAt       DateTime @default(now())
+  task            Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model TaskAssignment {
+  id                String   @id @default(cuid())
+  taskId            String
+  assignedByDiscordId String
+  assigneeDiscordId String
+  note              String?
+  createdAt         DateTime @default(now())
+  task              Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model TaskTransition {
+  id                 String   @id @default(cuid())
+  taskId             String
+  fromWorkflowStateId String
+  toWorkflowStateId  String
+  movedByDiscordId   String
+  reason             String?
+  createdAt          DateTime @default(now())
+  task               Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model ApprovalDecision {
+  id                 String   @id @default(cuid())
+  taskId             String
+  actorDiscordId     String
+  decision           ApprovalDecisionStatus
+  note               String?
+  createdAt          DateTime @default(now())
+  task               Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model NotificationRule {
+  id                String   @id @default(cuid())
+  guildConfigId     String
+  eventKey          String
+  channelId         String?
+  mentionRoleId     String?
+  isEnabled         Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  guildConfig       GuildConfig @relation(fields: [guildConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([guildConfigId, eventKey])
+}
