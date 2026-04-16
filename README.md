@@ -246,6 +246,15 @@ npm run start:dev
 - [Discord Dialogs](./docs/discord-dialogs.md)
 - [Deployment](./docs/deployment.md)
 - [User Flow Diagram](./docs/user-flow.md)
+- [Terms of Service](./docs/terms-of-service.md)
+- [Privacy Policy](./docs/privacy-policy.md)
+
+## Legal URLs
+
+When the app is deployed, publish these URLs in the Discord Developer Portal:
+
+- `https://your-domain.example/legal/terms`
+- `https://your-domain.example/legal/privacy`
 
 ## Notes
 
