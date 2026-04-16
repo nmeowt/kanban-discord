@@ -19,6 +19,7 @@ import {
   SlashCommandBuilder,
 } from 'discord.js';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationService } from '../tasks/notification.service';
 import { PermissionService } from '../tasks/permission.service';
 import { SettingsService } from '../tasks/settings.service';
 import { WorkflowService } from '../tasks/workflow.service';
@@ -47,6 +48,7 @@ export class DiscordService implements OnModuleInit {
     private readonly workflowService: WorkflowService,
     private readonly settingsService: SettingsService,
     private readonly permissionService: PermissionService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async onModuleInit() {
@@ -489,6 +491,16 @@ export class DiscordService implements OnModuleInit {
           note: 'Assigned during task creation',
         },
       });
+
+      await this.notificationService.notify('task.assigned', {
+        guildConfigId: guildConfig.id,
+        taskExternalKey: task.externalKey,
+        taskTitle: task.title,
+        assignedByDiscordId: interaction.user.id,
+        assigneeDiscordId: assignee.id,
+        dueDate: task.dueDate,
+        note: 'Assigned during task creation',
+      });
     }
 
     await interaction.reply({
@@ -573,6 +585,17 @@ export class DiscordService implements OnModuleInit {
           note: 'Reassigned during task update',
         },
       });
+
+      await this.notificationService.notify('task.assigned', {
+        guildConfigId: guildConfig.id,
+        taskExternalKey: updated.externalKey,
+        taskTitle: updated.title,
+        assignedByDiscordId: interaction.user.id,
+        assigneeDiscordId: assignee.id,
+        previousAssigneeDiscordId: task.assigneeDiscordId,
+        dueDate: updated.dueDate,
+        note: 'Reassigned during task update',
+      });
     }
 
     await interaction.reply({
@@ -606,6 +629,19 @@ export class DiscordService implements OnModuleInit {
         note,
       },
     });
+
+    if (task.assigneeDiscordId !== assignee.id) {
+      await this.notificationService.notify('task.assigned', {
+        guildConfigId: guildConfig.id,
+        taskExternalKey: updated.externalKey,
+        taskTitle: updated.title,
+        assignedByDiscordId: interaction.user.id,
+        assigneeDiscordId: assignee.id,
+        previousAssigneeDiscordId: task.assigneeDiscordId,
+        dueDate: updated.dueDate,
+        note,
+      });
+    }
 
     await interaction.reply({ ephemeral: true, content: `Assigned **${updated.title}** to <@${assignee.id}>.` });
   }

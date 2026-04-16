@@ -107,6 +107,21 @@ async function main() {
       isEnabled: true,
     },
   });
+
+  await prisma.notificationRule.upsert({
+    where: {
+      guildConfigId_eventKey: {
+        guildConfigId: guild.id,
+        eventKey: 'task.assigned',
+      },
+    },
+    update: {},
+    create: {
+      guildConfigId: guild.id,
+      eventKey: 'task.assigned',
+      isEnabled: true,
+    },
+  });
 }
 
 main()
